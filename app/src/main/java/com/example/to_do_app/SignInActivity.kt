@@ -1,6 +1,7 @@
 package com.example.to_do_app
 
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
@@ -16,7 +17,7 @@ class SignInActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySignInBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        supportActionBar?.hide();
         auth = FirebaseAuth.getInstance()
 
         binding.textView.setOnClickListener{
@@ -42,27 +43,14 @@ class SignInActivity : AppCompatActivity() {
                         startActivity(intent)
                         finish()
                     } else {
-                        Toast.makeText(this, it.exception.toString(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Error while signing", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
 
     }
-//
-//    override fun onStart() {
-//        super.onStart()
-//        if(auth.currentUser != null){
-//            Toast.makeText(this,"going",Toast.LENGTH_LONG).show()
-//            var intent= Intent(this,MainActivity::class.java)
-//
-//            startActivity(intent)
-//            finish()
-//        }
-//        else{
-//                    Toast.makeText(this,"You can log in now",Toast.LENGTH_LONG).show()
-//        }
-//    }
+
     private fun Checkformdetails(useremail:String,userpassword:String): Boolean {
 
         return !(useremail.isBlank() || userpassword.isEmpty())

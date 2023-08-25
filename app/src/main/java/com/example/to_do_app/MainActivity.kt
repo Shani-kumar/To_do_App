@@ -3,40 +3,64 @@ package com.example.to_do_app
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.to_do_app.databinding.ActivityMainBinding
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Query
+import java.util.Date
+
 
 class MainActivity : AppCompatActivity(), NotesItemClicked  {
+
 
     private lateinit var auth: FirebaseAuth
     private lateinit var binding: ActivityMainBinding
     private lateinit var fstore: FirebaseFirestore
     private lateinit var items: ArrayList<usermodel>
     private lateinit var userid: String
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.nav_menu,menu)
+        return true
+    }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            R.id.navsignout -> {
+                auth.signOut()
+                val intent = Intent(this, SignInActivity::class.java)
+                startActivity(intent)
+                finish()
+                return true
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        supportActionBar!!.setBackgroundDrawable(ColorDrawable(resources.getColor(R.color.yellow)))
         binding.recyclerview.layoutManager= LinearLayoutManager(this)
         fstore = FirebaseFirestore.getInstance()
         auth=FirebaseAuth.getInstance()
 
 
-        binding.btn.setOnClickListener {
-            auth.signOut()
-            var intent= Intent(this,SignInActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
+
         val sharedPref=this?.getPreferences(Context.MODE_PRIVATE)?:return
         val isLogin=sharedPref.getString("Email","1")
 
@@ -62,125 +86,135 @@ class MainActivity : AppCompatActivity(), NotesItemClicked  {
         }
 
     }
-//
-    private fun setText(){
-        auth=FirebaseAuth.getInstance()
-        fstore= FirebaseFirestore.getInstance()
+
+
+
+    private fun setText() {
+        auth = FirebaseAuth.getInstance()
+        fstore = FirebaseFirestore.getInstance()
         val currentUser = auth.currentUser
         if (currentUser != null) {
             userid = currentUser.uid
 
-            val doc=fstore.collection("user").document(userid)
-            doc.addSnapshotListener { snapshot, e ->
-                if(e!=null){
+            val collectionRef = fstore.collection("user")
+            collectionRef.addSnapshotListener { querySnapshot, e ->
+                if (e != null) {
                     Log.w(ContentValues.TAG, "Listen failed.", e)
                     return@addSnapshotListener
                 }
-                if ((snapshot != null) && snapshot.exists()) {
+                if (querySnapshot != null) {
+                    // Your code here
                     binding.submit.setOnClickListener {
                         val note = binding.input.text.toString()
                         binding.input.setText("")
-                        addNoteToFirestore(note,userid)
+                        addNoteToFirestore(note, userid)
+                        retrieveNotesFromFirestore(userid)
 
                     }
-
                     retrieveNotesFromFirestore(userid)
+
+
                 } else {
                     Log.d(ContentValues.TAG, "Current data: null")
                 }
             }
-//            binding.btn.setOnClickListener {
-//                auth.signOut()
-//                val intent = Intent(this, SignInActivity::class.java)
-//                startActivity(intent)
-//                finish()
-//            }
-            // Continue with the rest of the code that depends on `userid`.
         } else {
             // Handle the case when the user is not authenticated or the authentication state is not resolved yet.
             // For example, you can redirect the user to the sign-in activity.
-            var intent=Intent(this,SignInActivity::class.java)
+            val intent = Intent(this, SignInActivity::class.java)
             startActivity(intent)
             finish()
         }
-//        userid=auth.currentUser!!.uid
 
     }
 
 
-//    private fun addNoteToFirestore(note: String) {
-//        val um = usermodel(note)
-//        fstore.collection("note").add(um).addOnCompleteListener { task ->
-//            if (task.isSuccessful) {
-//                Toast.makeText(this, "Data added", Toast.LENGTH_SHORT).show()
-//            } else {
-//                Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show()
-//            }
-//        }.addOnFailureListener { e ->
-//            Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
-//        }
-//    }
-    private fun addNoteToFirestore(note: String, documentId: String) {
-        val um = usermodel(note)
-        fstore.collection("note").document(documentId).set(um)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "Data added", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show()
+
+
+private fun addNoteToFirestore(note: String,  userId: String) {
+
+    val um = usermodel(note, false, Timestamp(Date()), userId, "") // Initialize firestoreId as empty
+
+    fstore.collection("note")
+        .add(um)
+        .addOnSuccessListener { documentReference ->
+            // Get the Firestore-generated ID
+            val firestoreId = documentReference.id
+
+            // Update the um instance with the firestoreId
+            um.firestoreId = firestoreId
+
+            // Now update the Firestore document with the firestoreId
+            fstore.collection("note").document(firestoreId)
+                .set(um)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Toast.makeText(this, "Data added", Toast.LENGTH_SHORT).show()
+                        retrieveNotesFromFirestore(userid)
+                    } else {
+                        Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }.addOnFailureListener { e ->
-                Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
-            }
-    }
+                .addOnFailureListener { e ->
+//                    Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
+                }
+        }
+        .addOnFailureListener { e ->
+//            Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
+        }
+}
 
-//    private fun retrieveNotesFromFirestore(documentId: String) {
-//        val items = ArrayList<usermodel>()
-//        fstore.collection("note").document(documentId)
-//            .get()
-//            .addOnSuccessListener { documentSnapshot ->
-//                if (documentSnapshot.exists()) {
-//                    val ussr = documentSnapshot.toObject(usermodel::class.java)
-//                    ussr?.let {
-//                        items.add(ussr)
-//                        binding.recyclerview.adapter = Notesadapter(items)
-//                    }
-//                } else {
-//                    Toast.makeText(this, "Document not found", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//            .addOnFailureListener { e ->
-//                Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
-//            }
-//    }
-private fun retrieveNotesFromFirestore(documentId: String) {
-    val notesRef = fstore.collection("note").document(documentId)
 
-    // Set up a real-time listener for the specific document
-    notesRef.addSnapshotListener { documentSnapshot, exception ->
+    private fun retrieveNotesFromFirestore(userid: String) {
+    val notesRef = fstore.collection("note").whereEqualTo("userid", userid).orderBy("completed",
+        Query.Direction.ASCENDING)
+        .orderBy("timestamp",Query.Direction.DESCENDING)
+
+    // Set up a real-time listener for the query results
+    notesRef.addSnapshotListener { querySnapshot, exception ->
         if (exception != null) {
-            Toast.makeText(this, "Error fetching notes: ${exception.message}", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this, "Error fetching notes}", Toast.LENGTH_SHORT).show()
             return@addSnapshotListener
         }
 
-        documentSnapshot?.let { snapshot ->
-            if (snapshot.exists()) {
-                val note = snapshot.toObject(usermodel::class.java)
+        querySnapshot?.let { snapshot ->
+            val notesList = ArrayList<usermodel>() // Use proper capitalization
+            for (document in snapshot.documents) {
+                val note = document.toObject(usermodel::class.java)
                 note?.let { retrievedNote ->
-                    val notesList = ArrayList<usermodel>()
                     notesList.add(retrievedNote)
-                    binding.recyclerview.adapter = Notesadapter(notesList)
                 }
-            } else {
-                Toast.makeText(this, "Document not found", Toast.LENGTH_SHORT).show()
             }
+
+            // Update the RecyclerView adapter with the retrieved data
+            binding.recyclerview.adapter = Notesadapter(notesList)
         }
     }
 }
 
 
-    override fun onItemClicked(item: String) {
-        Toast.makeText(this,"Clicked item is $item",Toast.LENGTH_LONG).show()
+
+    override fun onItemClicked(item: usermodel) {
+        val documentIdToDelete = item.firestoreId
+
+        fstore.collection("note")
+            .document(documentIdToDelete)
+            .delete()
+            .addOnSuccessListener {
+//                // Document successfully deleted
+//                notesRef.remove()
+//                // Re-add the snapshot listener
+                retrieveNotesFromFirestore(userid)
+//                // Manually refresh the RecyclerView
+//                binding.recyclerview.adapter?.notifyDataSetChanged()
+
+                }
+
+            .addOnFailureListener { exception ->
+                // Handle delete failure
+                Toast.makeText(this,"error while deleting  ",Toast.LENGTH_LONG).show()
+            }
     }
+
 
 }

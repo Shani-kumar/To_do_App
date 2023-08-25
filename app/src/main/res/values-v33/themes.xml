@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Base.Theme.To_do_app" parent="Theme.Material3.DayNight">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/yellow</item>
+        <!--        <item name="android:navigationBarColor">@color/yellow</item>-->
+        <item name="android:backdropColor">@color/yellow</item>
+
+    </style>
+</resources>

@@ -2,8 +2,15 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.To_do_app" parent="Theme.Material3.DayNight">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+         <item name="colorPrimary">@color/yellow</item>
+<!--        <item name="android:navigationBarColor">@color/yellow</item>-->
+
+
     </style>
 
-    <style name="Theme.To_do_app" parent="Base.Theme.To_do_app" />
+    <style name="Theme.To_do_app" parent="Base.Theme.To_do_app">
+        <item name="colorPrimary">@color/yellow</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+<!--        <item name="colorAccent">@color/colorAccent</item>-->
+    </style>>
 </resources>

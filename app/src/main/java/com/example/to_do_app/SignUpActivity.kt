@@ -1,12 +1,15 @@
 package com.example.to_do_app
 
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import com.example.to_do_app.databinding.ActivitySignUpBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
+import java.util.Date
 
 class SignUpActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySignUpBinding
@@ -19,7 +22,7 @@ class SignUpActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         auth = FirebaseAuth.getInstance()
-
+        supportActionBar?.hide();
 
         fstore= FirebaseFirestore.getInstance()
         binding.textView.setOnClickListener {
@@ -40,10 +43,10 @@ class SignUpActivity : AppCompatActivity() {
 
                             userid= auth.currentUser!!.uid
                             val um:usermodel
-                            um= usermodel(email)
+                            um= usermodel(email,false,Timestamp(Date()),userid,"")
                             fstore.collection("user").document(userid).set(um).addOnCompleteListener {
                                 if (it.isSuccessful){
-                                    Toast.makeText(this, "Data added", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this, "Account created", Toast.LENGTH_SHORT).show()
                                 }
                                 else{
                                     Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show()
